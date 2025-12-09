@@ -1,16 +1,25 @@
 name: Ramadan Reminder Workflow
 
 on:
-  push:
-    branches: [main]
   schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight
+    - cron: '0 0 * * *'   # Runs daily at midnight UTC
+  workflow_dispatch:       # Allows manual testing
 
 jobs:
   send-reminder:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
-      
-      # You can add steps here later to pull data from Google Sheets and send WhatsApp reminders.
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run reminder script
+        run: node app.js
