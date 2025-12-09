@@ -1,0 +1,11 @@
+{
+  "name": "ramadan-reminder",
+  "version": "1.0.0",
+  "description": "Automation for sending daily Ramadan countdown reminders via WhatsApp Business API.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {}
+}
+
