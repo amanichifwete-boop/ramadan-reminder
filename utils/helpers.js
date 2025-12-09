@@ -1,35 +1,40 @@
 // utils/helpers.js
-// Helper functions for Ramadan reminder logic.
+// Hijri date conversion using native Intl (no external packages)
 
-const Hijri = require("hijri-converter");
+'use strict';
 
-// Convert a date to YYYY-MM-DD format (Gregorian)
+// Convert to YYYY-MM-DD (Gregorian)
 function formatDate(date) {
   return date.toISOString().split("T")[0];
 }
 
-// Convert today's date to Hijri (Umm al-Qura)
+// Convert today's date to Hijri using Intl Islamic calendar
 function getHijriDate() {
   const today = new Date();
-  const h = Hijri.toHijri(today);
 
-  // Example output: "24 Jumada II 1447 AH"
-  const hijriMonthNames = [
-    "Muharram", "Safar", "Rabi' I", "Rabi' II", "Jumada I", "Jumada II",
-    "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah"
-  ];
+  const formatted = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(today);
 
-  const monthName = hijriMonthNames[h.hm - 1];
+  const clean = formatted.replace(",", "").trim();
+  const tokens = clean.split(/\s+/);
 
-  return `${h.hd} ${monthName} ${h.hy} AH`;
+  const day = tokens.find(t => /^\d+$/.test(t)) || "";
+  const year = [...tokens].reverse().find(t => /^\d+$/.test(t)) || "";
+  const monthTokens = tokens.filter(t => t !== day && t !== year);
+  const monthName = monthTokens.join(" ").trim() || "Jumada al-Thani";
+
+  return `${day} ${monthName} ${year} AH`;
 }
 
-// Days remaining until Ramadan 2026 (adjust if needed)
+// Countdown to Ramadan 2026
 function daysUntilRamadan() {
-  const ramadan2026 = new Date("2026-02-28"); // Approximate start date
+  const ramadan2026 = new Date("2026-02-28T00:00:00Z");
   const today = new Date();
-  const diffMs = ramadan2026 - today;
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const diff = ramadan2026 - today;
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 module.exports = {

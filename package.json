@@ -7,8 +7,7 @@
     "start": "node app.js"
   },
   "dependencies": {
-    "hijri-converter": "^2.0.4",
-    "node-fetch": "^3.3.2",
-    "googleapis": "^133.0.0"
+    "node-fetch": "2.6.9",
+    "googleapis": "^121.0.0"
   }
 }
