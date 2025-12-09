@@ -23,6 +23,7 @@ function getHijriDate() {
 
   const day = tokens.find(t => /^\d+$/.test(t)) || "";
   const year = [...tokens].reverse().find(t => /^\d+$/.test(t)) || "";
+
   const monthTokens = tokens.filter(t => t !== day && t !== year);
   const monthName = monthTokens.join(" ").trim() || "Jumada al-Thani";
 
@@ -42,3 +43,4 @@ module.exports = {
   getHijriDate,
   daysUntilRamadan
 };
+
