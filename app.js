@@ -3,7 +3,7 @@
 
 const { getSheetData } = require("./utils/google");
 const { sendWhatsAppMessage } = require("./utils/whatsapp");
-const { formatDate, daysUntilRamadan } = require("./utils/helpers");
+const { formatDate, daysUntilRamadan, getHijriDate } = require("./utils/helpers");
 
 async function main() {
   console.log("🚀 Ramadan Reminder automation starting...");
@@ -11,12 +11,10 @@ async function main() {
   // Today's dates
   const today = new Date();
   const gregorianDate = formatDate(today);
+  const hijriDate = getHijriDate();
 
   // Countdown calculation
   const daysLeft = daysUntilRamadan();
-
-  // TODO: Replace this placeholder with a real Hijri calculation
-  const hijriDate = "Hijri placeholder (to be implemented)";
 
   // Fetch Sheet rows
   const users = await getSheetData();
@@ -33,10 +31,10 @@ async function main() {
   // Loop and send messages
   for (const user of recipients) {
     const params = [
-      user.full_name,           // {{1}} User Name
-      gregorianDate,            // {{2}} Gregorian Date
-      hijriDate,                // {{3}} Hijri Date
-      `${daysLeft}`             // {{4}} Days Remaining
+      user.full_name,       // {{1}} User Name
+      gregorianDate,        // {{2}} Gregorian Date
+      hijriDate,            // {{3}} Hijri Date
+      `${daysLeft}`         // {{4}} Days Remaining
     ];
 
     console.log(`\n➡️ Sending reminder to: ${user.full_name} (${user.phone})`);
