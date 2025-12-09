@@ -3,7 +3,7 @@ name: Ramadan Reminder Workflow
 on:
   schedule:
     - cron: '0 0 * * *'   # Runs daily at midnight UTC
-  workflow_dispatch:       # Allows manual testing
+  workflow_dispatch:       # Allows manual trigger
 
 jobs:
   send-reminder:
@@ -22,4 +22,10 @@ jobs:
         run: npm install
 
       - name: Run reminder script
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          WABA_PHONE_NUMBER_ID: ${{ secrets.WABA_PHONE_NUMBER_ID }}
+          WABA_WHATSAPP_TOKEN: ${{ secrets.WABA_WHATSAPP_TOKEN }}
+          WABA_TEMPLATE_NAME: ${{ secrets.WABA_TEMPLATE_NAME }}
         run: node app.js
