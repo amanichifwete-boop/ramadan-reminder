@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node app.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "hijri-converter": "^2.0.4",
+    "node-fetch": "^3.3.2",
+    "googleapis": "^133.0.0"
+  }
 }
-
