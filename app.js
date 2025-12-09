@@ -1,40 +1,62 @@
 // app.js
-// Main runner for Ramadan Reminder automation
+// Main automation runner for Ramadan Reminder
 
 const { getSheetData } = require("./utils/google");
 const { sendWhatsAppMessage } = require("./utils/whatsapp");
 const { formatDate, daysUntilRamadan } = require("./utils/helpers");
 
 async function main() {
-  console.log("Ramadan Reminder automation starting...");
+  console.log("🚀 Ramadan Reminder automation starting...");
 
-  // Today's date
+  // Today's dates
   const today = new Date();
-  const formattedDate = formatDate(today);
+  const gregorianDate = formatDate(today);
 
-  // Countdown
+  // Countdown calculation
   const daysLeft = daysUntilRamadan();
-  console.log(`Days until Ramadan: ${daysLeft}`);
 
-  // Fetch Sheet data (placeholder)
+  // TODO: Replace this placeholder with a real Hijri calculation
+  const hijriDate = "Hijri placeholder (to be implemented)";
+
+  // Fetch Sheet rows
   const users = await getSheetData();
-  console.log("Fetched users:", users);
 
-  // Loop through users and send WhatsApp reminder
-  for (const user of users) {
-    await sendWhatsAppMessage(
-      user.phone || "N/A",
-      process.env.WABA_TEMPLATE_NAME || "template_name_here",
-      [
-        formattedDate,                   // Example parameter 1
-        `${daysLeft} days remaining`     // Example parameter 2
-      ]
+  console.log(`📄 ${users.length} total entries found in sheet.`);
+
+  // Filter users who opted in
+  const recipients = users.filter(
+    (u) => u.opt_in_status.trim().toUpperCase() === "YES"
+  );
+
+  console.log(`📬 ${recipients.length} recipients will receive reminders.`);
+
+  // Loop and send messages
+  for (const user of recipients) {
+    const params = [
+      user.full_name,           // {{1}} User Name
+      gregorianDate,            // {{2}} Gregorian Date
+      hijriDate,                // {{3}} Hijri Date
+      `${daysLeft}`             // {{4}} Days Remaining
+    ];
+
+    console.log(`\n➡️ Sending reminder to: ${user.full_name} (${user.phone})`);
+
+    const result = await sendWhatsAppMessage(
+      user.phone,
+      process.env.WABA_TEMPLATE_NAME,
+      params
     );
+
+    if (result.success) {
+      console.log(`✅ Reminder sent to ${user.full_name}`);
+    } else {
+      console.log(`❌ Failed for ${user.full_name}`);
+    }
   }
 
-  console.log("Reminder flow completed.");
+  console.log("\n🎉 All messages processed.");
 }
 
 main().catch((err) => {
-  console.error("Error running reminder script:", err);
+  console.error("❌ Fatal error:", err);
 });
