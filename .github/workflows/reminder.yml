@@ -28,6 +28,7 @@ jobs:
           WABA_PHONE_NUMBER_ID: ${{ secrets.WABA_PHONE_NUMBER_ID }}
           WABA_WHATSAPP_TOKEN: ${{ secrets.WABA_WHATSAPP_TOKEN }}
           WABA_TEMPLATE_NAME: ${{ secrets.WABA_TEMPLATE_NAME }}
+          RAMADAN_START_ISO: ${{ secrets.RAMADAN_START_ISO }}   # ✅ Added & Correct
         run: |
           set -e   # ❗ FAIL workflow if app.js returns any error
           node app.js
