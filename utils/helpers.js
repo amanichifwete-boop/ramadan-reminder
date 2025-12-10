@@ -1,58 +1,9 @@
 // utils/helpers.js
-// Fully custom Hijri converter — consistent English output, no Intl issues.
+// Hijri date using Intl Islamic calendar + custom English month mapping
 
-const monthNames = [
-  "Muharram",
-  "Safar",
-  "Rabi Al Awwal",
-  "Rabi Al Thani",
-  "Jumada Ula",
-  "Jumada Thani",
-  "Rajab",
-  "Sha'ban",
-  "Ramadan",
-  "Shawwal",
-  "Dhu al-Qadah",
-  "Dhu al-Hijjah"
-];
-
-/**
- * Convert Gregorian → Hijri using tabular Islamic calendar
- * Returns: "DD Month YYYY"
- */
-function getHijriDate(date = new Date()) {
-  const gDay = date.getDate();
-  const gMonth = date.getMonth();
-  const gYear = date.getFullYear();
-
-  // Julian Day
-  const jd =
-    Math.floor((1461 * (gYear + 4800 + Math.floor((gMonth - 14) / 12))) / 4) +
-    Math.floor((367 * (gMonth + 12 * Math.floor((gMonth - 14) / 12) - 2)) / 12) -
-    Math.floor((3 * Math.floor((gYear + 4900 + Math.floor((gMonth - 14) / 12)) / 100)) / 4) +
-    gDay -
-    32075;
-
-  // Islamic date conversion
-  const l = jd - 1948440 + 10632;
-  const n = Math.floor((l - 1) / 10631);
-  const k = l - 10631 * n;
-  const j = Math.floor((k - 1) / 354.36667);
-  const i = k - Math.floor(j * 354.36667);
-
-  const hijriYear = 30 * n + j + 1;
-  const hijriMonth = Math.floor((i - 1) / 29.53); // approximate
-  const hijriDay = Math.floor(i - hijriMonth * 29.53);
-
-  const month = monthNames[Math.max(0, Math.min(11, hijriMonth))];
-
-  // Output WITHOUT AH (template adds AH)
-  return `${hijriDay} ${month} ${hijriYear}`;
-}
-
-/**
- * Gregorian date formatted YYYY-MM-DD
- */
+// -----------------------------------------------------
+// Gregorian date formatter
+// -----------------------------------------------------
 function formatDate(d = new Date()) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -60,24 +11,101 @@ function formatDate(d = new Date()) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/**
- * Days until Ramadan (using secret RAMADAN_START_ISO)
- */
+// -----------------------------------------------------
+// Days until Ramadan (ISO from secrets)
+// -----------------------------------------------------
 function daysUntilRamadan() {
   const iso = process.env.RAMADAN_START_ISO;
   if (!iso) throw new Error("Missing RAMADAN_START_ISO");
 
-  const t = new Date();
+  const today = new Date();
   const r = new Date(iso);
 
-  const today = Date.UTC(t.getFullYear(), t.getMonth(), t.getDate());
-  const target = Date.UTC(r.getFullYear(), r.getMonth(), r.getDate());
+  const tMid = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const rMid = Date.UTC(r.getFullYear(), r.getMonth(), r.getDate());
 
-  return Math.max(0, Math.ceil((target - today) / 86400000));
+  return Math.max(0, Math.ceil((rMid - tMid) / 86400000));
+}
+
+// -----------------------------------------------------
+// MAIN FIXED HIJRI DATE FUNCTION
+// -----------------------------------------------------
+function getHijriDate(date = new Date()) {
+  let raw;
+
+  try {
+    raw = new Intl.DateTimeFormat("en-US-u-ca-islamic", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC"
+    }).format(date);
+  } catch (e) {
+    console.error("Intl Hijri conversion error:", e);
+    return "";
+  }
+
+  // Example raw outputs we must normalize:
+  // "20 Jumada II 1447"
+  // "20 Jumādā al-Ākhirah 1447"
+  // "20 jumada ii 1447"
+
+  const parts = raw.toLowerCase().split(" ");
+  if (parts.length < 3) return raw;
+
+  const day = parts[0];
+  const year = parts[parts.length - 1];
+  const monthRaw = parts.slice(1, -1).join(" ");
+
+  // Remove diacritics for clean matching
+  const clean = monthRaw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")   // remove accents
+    .replace(/[^a-z\s]/g, " ")         // remove symbols
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Month mapping (your style A)
+  const map = {
+    "muharram": "Muharram",
+    "safar": "Safar",
+    "rabi al awwal": "Rabi Al Awwal",
+    "rabi i": "Rabi Al Awwal",
+    "rabi al thani": "Rabi Al Thani",
+    "rabi ii": "Rabi Al Thani",
+    "jumada ula": "Jumada Ula",
+    "jumada i": "Jumada Ula",
+    "jumada thani": "Jumada Thani",
+    "jumada ii": "Jumada Thani",
+    "rajab": "Rajab",
+    "shaban": "Sha'ban",
+    "sha ban": "Sha'ban",
+    "ramadan": "Ramadan",
+    "shawwal": "Shawwal",
+    "dhu al qada": "Dhu al-Qadah",
+    "dhu al hijjah": "Dhu al-Hijjah"
+  };
+
+  // Find matching rule
+  let month = null;
+  for (const key of Object.keys(map)) {
+    if (clean.includes(key)) {
+      month = map[key];
+      break;
+    }
+  }
+
+  // Fallback: capitalize cleaned raw month
+  if (!month) {
+    month = clean.replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // Final output (no double AH)
+  return `${day} ${month} ${year}`;
 }
 
 module.exports = {
   formatDate,
-  getHijriDate,
   daysUntilRamadan,
+  getHijriDate,
 };
