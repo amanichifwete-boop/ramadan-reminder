@@ -1,5 +1,5 @@
 // utils/google.js
-// Real Google Sheets integration using Service Account credentials
+// Google Sheets integration using Service Account credentials
 
 const { google } = require("googleapis");
 
@@ -22,12 +22,15 @@ function getAuthClient() {
     credentials.client_email,
     null,
     credentials.private_key,
-    ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    [
+      "https://www.googleapis.com/auth/spreadsheets", 
+      // READ + WRITE access
+    ]
   );
 }
 
 /**
- * Fetch data from Google Sheet
+ * Fetch data from Google Sheet (includes row index for updates)
  */
 async function getSheetData() {
   const auth = getAuthClient();
@@ -43,8 +46,10 @@ async function getSheetData() {
 
   const rows = response.data.values || [];
 
-  // Map each row to an object matching your sheet structure
-  return rows.map((row) => ({
+  // Map each row to an object matching sheet structure
+  return rows.map((row, index) => ({
+    _rowIndex: index, // <-- REQUIRED for updating row later
+
     timestamp: row[0] || "",
     full_name: row[1] || "",
     gender: row[2] || "",
@@ -56,4 +61,32 @@ async function getSheetData() {
   }));
 }
 
-module.exports = { getSheetData };
+/**
+ * Update delivery_status column for a specific row
+ * rowIndex = 0 means Sheet row 2
+ */
+async function updateDeliveryStatus(rowIndex, status) {
+  const auth = getAuthClient();
+  const sheets = google.sheets({ version: "v4", auth });
+
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+
+  // Write into Column H (delivery_status)
+  const range = `Sheet1!H${rowIndex + 2}`;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[status]],
+    },
+  });
+
+  console.log(`📝 Updated delivery_status for row ${rowIndex + 2}: ${status}`);
+}
+
+module.exports = { 
+  getSheetData,
+  updateDeliveryStatus
+};
