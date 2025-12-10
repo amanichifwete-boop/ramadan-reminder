@@ -45,9 +45,8 @@ function getHijriDate(date = new Date()) {
     return "";
   }
 
-  // Example raw outputs we must normalize:
+  // raw examples:
   // "20 Jumada II 1447"
-  // "20 Jumādā al-Ākhirah 1447"
   // "20 jumada ii 1447"
 
   const parts = raw.toLowerCase().split(" ");
@@ -57,15 +56,15 @@ function getHijriDate(date = new Date()) {
   const year = parts[parts.length - 1];
   const monthRaw = parts.slice(1, -1).join(" ");
 
-  // Remove diacritics for clean matching
+  // Clean the month string
   const clean = monthRaw
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")   // remove accents
-    .replace(/[^a-z\s]/g, " ")         // remove symbols
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Month mapping (your style A)
+  // Month mapping (Style A)
   const map = {
     "muharram": "Muharram",
     "safar": "Safar",
@@ -86,7 +85,6 @@ function getHijriDate(date = new Date()) {
     "dhu al hijjah": "Dhu al-Hijjah"
   };
 
-  // Find matching rule
   let month = null;
   for (const key of Object.keys(map)) {
     if (clean.includes(key)) {
@@ -95,13 +93,24 @@ function getHijriDate(date = new Date()) {
     }
   }
 
-  // Fallback: capitalize cleaned raw month
+  // Fallback
   if (!month) {
     month = clean.replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  // Final output (no double AH)
-  return `${day} ${month} ${year}`;
+  // ----------------------------------
+  // APPLY YOUR THREE FIXES ONLY
+  // ----------------------------------
+
+  // Capitalize roman numeral II if present
+  month = month.replace(/\bii\b/i, "II");
+
+  // Capitalize AH if present
+  month = month.replace(/\bah\b/i, "AH");
+
+  // Final output:
+  // "20 Jumada Thani 1447 AH"
+  return `${day} ${month} ${year} AH`;
 }
 
 module.exports = {
