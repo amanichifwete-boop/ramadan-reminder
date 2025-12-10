@@ -1,25 +1,15 @@
 // utils/whatsapp.js
-// Real WhatsApp Business API template sender
+// Safe WhatsApp sender with retries + backoff
 
-const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const axios = require("axios");
 
-async function sendWhatsAppMessage(phoneNumber, templateName, templateParams) {
+async function sendWhatsAppMessage(phone, templateName, params) {
   const token = process.env.WABA_WHATSAPP_TOKEN;
   const phoneId = process.env.WABA_PHONE_NUMBER_ID;
 
-  if (!phoneNumber || phoneNumber.trim() === "") {
-    console.log("❌ Skipping user — missing phone number");
-    return { success: false };
-  }
-
-  console.log(`📨 Sending WABA template → ${phoneNumber}`);
-
-  const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
-
   const payload = {
     messaging_product: "whatsapp",
-    to: phoneNumber,
+    to: phone,
     type: "template",
     template: {
       name: templateName,
@@ -27,32 +17,45 @@ async function sendWhatsAppMessage(phoneNumber, templateName, templateParams) {
       components: [
         {
           type: "body",
-          parameters: templateParams.map((value) => ({
-            type: "text",
-            text: value,
-          })),
+          parameters: params.map((p) => ({ type: "text", text: p })),
         },
       ],
     },
   };
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const url = `https://graph.facebook.com/v18.0/${phoneId}/messages`;
 
-  const data = await response.json();
+  let attempt = 0;
+  const maxAttempts = 3;
 
-  if (response.ok) {
-    console.log("✅ Sent successfully:", data);
-    return { success: true, data };
-  } else {
-    console.log("❌ Failed to send:", data);
-    return { success: false, data };
+  while (attempt < maxAttempts) {
+    try {
+      attempt++;
+      console.log(`📨 Attempt ${attempt} → sending to ${phone}`);
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      // If Meta returns success
+      return { success: true, response: response.data };
+
+    } catch (err) {
+      console.log(`⚠️ Send failed (attempt ${attempt}):`, err?.response?.data || err.message);
+
+      if (attempt >= maxAttempts) {
+        // After maximum attempts, fail permanently
+        return { success: false, error: err?.response?.data || err.message };
+      }
+
+      // Exponential backoff: wait 1s → 2s → 4s
+      const wait = 1000 * Math.pow(2, attempt - 1);
+      console.log(`⏳ Waiting ${wait / 1000}s before retrying...`);
+      await new Promise((res) => setTimeout(res, wait));
+    }
   }
 }
 
