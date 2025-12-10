@@ -5,6 +5,12 @@ const { getSheetData } = require("./utils/google");
 const { sendWhatsAppMessage } = require("./utils/whatsapp");
 const { formatDate, daysUntilRamadan, getHijriDate } = require("./utils/helpers");
 
+// -----------------------------
+// 🔥 DRY RUN CONTROL
+// -----------------------------
+// Set in GitHub Secrets if needed. Default = LIVE mode.
+const DRY_RUN = process.env.DRY_RUN === "true" ? true : false;
+
 async function main() {
   console.log("🚀 Ramadan Reminder automation starting...");
 
@@ -27,6 +33,20 @@ async function main() {
   );
 
   console.log(`📬 ${recipients.length} recipients will receive reminders.`);
+
+  // If DRY-RUN → stop BEFORE sending WhatsApp messages
+  if (DRY_RUN) {
+    console.log("\n🔍 DRY RUN ENABLED — WhatsApp messages will NOT be sent.");
+    console.log("📝 Recipients that WOULD have received messages:");
+    recipients.forEach((u) =>
+      console.log(` - ${u.full_name} (${u.phone})`)
+    );
+    console.log("\n🎉 DRY RUN complete.");
+    return; // stop execution
+  }
+
+  // LIVE MODE — SEND REAL MESSAGES
+  console.log("\n🔥 LIVE MODE — Real WhatsApp messages WILL be sent.");
 
   // Loop and send messages
   for (const user of recipients) {
