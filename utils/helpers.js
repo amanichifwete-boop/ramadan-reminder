@@ -1,8 +1,8 @@
 // utils/helpers.js
-// Date helpers: Gregorian formatting, Hijri conversion (English month names), countdown
+// Gregorian formatting, Hijri (English transliteration), and Ramadan countdown
 
 /**
- * formatDate - returns ISO date string YYYY-MM-DD
+ * formatDate - returns date in YYYY-MM-DD (ISO)
  */
 function formatDate(d = new Date()) {
   const yyyy = d.getFullYear();
@@ -12,108 +12,95 @@ function formatDate(d = new Date()) {
 }
 
 /**
- * daysUntilRamadan - uses RAMADAN_START_ISO env (YYYY-MM-DD) to compute days left
+ * daysUntilRamadan - uses RAMADAN_START_ISO secret
  */
 function daysUntilRamadan() {
-  const startIso = process.env.RAMADAN_START_ISO;
-  if (!startIso) {
-    throw new Error("Missing RAMADAN_START_ISO in GitHub secrets");
-  }
+  const iso = process.env.RAMADAN_START_ISO;
+  if (!iso) throw new Error("Missing RAMADAN_START_ISO in GitHub secrets");
+
   const today = new Date();
-  // normalize local midnight for comparison
-  const todayUtcMid = Date.UTC(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate()
-  );
-  const target = new Date(startIso);
-  const targetUtcMid = Date.UTC(
-    target.getFullYear(),
-    target.getMonth(),
-    target.getDate()
-  );
-  const diffMs = targetUtcMid - todayUtcMid;
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const r = new Date(iso);
+
+  const todayMid = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const rMid     = Date.UTC(r.getFullYear(), r.getMonth(), r.getDate());
+
+  return Math.max(0, Math.ceil((rMid - todayMid) / 86400000));
 }
 
 /**
- * getHijriDate - returns a human friendly English Hijri date string
- * e.g. "19 Jumada Al Akhira 1447AH"
+ * getHijriDate - produces clean English Hijri date:
+ * e.g., "20 Jumada Thani 1447 AH"
  *
- * Uses Intl with 'islamic' calendar then normalizes the month to
- * desired English transliteration.
+ * Uses Intl Islamic calendar → normalizes month names.
  */
 function getHijriDate(d = new Date()) {
-  // Use Intl.DateTimeFormat with islamic calendar
-  // Some environments may not support the 'u-ca-islamic' extension;
-  // most modern Node runtimes do. This produces month names we normalize below.
-  const opts = { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" };
   let formatted;
+
   try {
+    const opts = { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" };
     formatted = new Intl.DateTimeFormat("en-US-u-ca-islamic", opts).format(d);
-    // formatted examples: "19 Jumādā al-Ākhirah 1447" or "19 Jumada II 1447"
+    // Example raw outputs:
+    // "20 Jumada II 1447"
+    // "20 Jumādā al-Ākhirah 1447"
   } catch (e) {
-    // Fallback: approximate by returning empty friendly string (so caller still sees something)
+    console.error("Hijri date conversion error:", e);
     return "";
   }
 
-  // Split into day, monthPart, year
-  // formatted may be like: "19 Jumādā al-Ākhirah 1447" or "19 Jumada II 1447"
   const parts = formatted.trim().split(/\s+/);
-  if (parts.length < 3) {
-    return formatted + " AH";
-  }
+  if (parts.length < 3) return formatted + " AH";
 
   const day = parts[0];
   const year = parts[parts.length - 1];
 
-  // month tokens are everything between day and year
-  const monthTokens = parts.slice(1, parts.length - 1).join(" ");
+  // Month tokens (may contain diacritics, Roman numerals, etc.)
+  const monthTokens = parts.slice(1, parts.length - 1).join(" ").toLowerCase();
 
-  // Normalise monthTokens to simplified lowercase to map reliably
-  const mt = monthTokens.toLowerCase();
-
-  // map various Intl month renderings to our preferred English transliterations
+  /**
+   * ❤️ Your preferred transliteration style (A):
+   * Jumada Ula  (for Jumada I)
+   * Jumada Thani (for Jumada II)
+   */
   const monthMap = [
     { keys: ["muharram"], val: "Muharram" },
     { keys: ["safar"], val: "Safar" },
-    { keys: ["rabi al-awwal", "rabi' al-awwal", "rabi' i al-awwal", "rabi' al awal", "rabi al-awwal", "rabi al awwal", "rabi al-awwal".toLowerCase()], val: "Rabi Al Awwal" },
-    { keys: ["rabi al-thani", "rabi' al-thani", "rabi al-thani", "rabi al thani"], val: "Rabi Al Thani" },
-    { keys: ["jumada al-ula", "jumada al-ula", "jumada al-ula".toLowerCase(), "jumada i", "jumada i".toLowerCase(), "jumada i".toLowerCase()], val: "Jumada Al Ula" },
-    { keys: ["jumada al-akhirah", "jumada al-akhira", "jumada al-akhira", "jumada ii", "jumada al akhirah"], val: "Jumada Al Akhira" },
+    { keys: ["rabi i", "rabi al-awwal", "rabial awwal"], val: "Rabi Al Awwal" },
+    { keys: ["rabi ii", "rabi al-thani"], val: "Rabi Al Thani" },
+    { keys: ["jumada i", "jumada al-ula", "jumada ula"], val: "Jumada Ula" },
+    { keys: ["jumada ii", "jumada al-akhirah", "jumada thani"], val: "Jumada Thani" },
     { keys: ["rajab"], val: "Rajab" },
-    { keys: ["sha'ban", "shaban", "sha‘ban"], val: "Sha'ban" },
-    { keys: ["ramadan", "ramadhan"], val: "Ramadan" },
+    { keys: ["shaban", "sha'ban", "shaaban"], val: "Sha'ban" },
+    { keys: ["ramadan"], val: "Ramadan" },
     { keys: ["shawwal"], val: "Shawwal" },
-    { keys: ["dhul qa'dah", "dhul-qadah", "dhu al-qa'dah", "dhu al-qadah", "dhu al qa'dah"], val: "Dhu al-Qadah" },
-    { keys: ["dhul hijjah", "dhu al-hijjah", "dhu al hijjah", "dhul-hijjah"], val: "Dhu al-Hijjah" }
+    { keys: ["dhu al-qadah", "dhul-qadah", "dhul qada"], val: "Dhu al-Qadah" },
+    { keys: ["dhu al-hijjah", "dhul-hijjah", "dhul hijjah"], val: "Dhu al-Hijjah" }
   ];
 
-  // best-effort match
-  let month = monthMap.find((m) =>
-    m.keys.some((k) => mt.includes(k))
+  // Normalize diacritics → simple a/u/i
+  const cleaned = monthTokens
+    .replace(/ā/g, "a")
+    .replace(/ū/g, "u")
+    .replace(/ī/g, "i")
+    .replace(/\./g, "")
+    .replace(/[^\w\s]/g, " ")
+    .trim();
+
+  let cleanedMonth = cleaned;
+
+  // Match month
+  let found = monthMap.find(m =>
+    m.keys.some(k => cleaned.includes(k) || cleanedMonth.includes(k))
   );
 
-  // fallback strategy: try remove diacritics and match simple tokens
-  if (!month) {
-    // simple token replacements
-    const simple = mt
-      .replace(/ā/g, "a")
-      .replace(/ū/g, "u")
-      .replace(/ī/g, "i")
-      .replace(/[^\w\s]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const monthFinal = found ? found.val : cleanedMonth;
 
-    month = monthMap.find((m) =>
-      m.keys.some((k) => simple.includes(k.replace(/[^a-z]/g, "")))
-    );
-  }
-
-  const monthStr = month ? month.val : monthTokens;
-
-  // final assembly, append AH suffix
-  return `${day} ${monthStr} ${year}AH`;
+  // Desired format:
+  //  "20 Jumada Thani 1447 AH"
+  return `${day} ${monthFinal} ${year} AH`;
 }
 
-module.exports = { formatDate, daysUntilRamadan, getHijriDate };
+module.exports = {
+  formatDate,
+  daysUntilRamadan,
+  getHijriDate,
+};
