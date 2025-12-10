@@ -27,10 +27,17 @@ async function main() {
 
   console.log(`📄 ${users.length} total entries found in sheet.`);
 
-  // Filter users who opted in
-  const recipients = users.filter(
-    (u) => u.opt_in_status.trim().toUpperCase() === "YES"
-  );
+  // -------------------------------------------
+  // ✅ NEW FILTER LOGIC — PHONE NUMBER ONLY
+  // -------------------------------------------
+  const recipients = users.filter((u) => {
+    if (!u.phone) return false;
+
+    const phone = u.phone.toString().trim();
+
+    // Must be numeric and start with 254 (WhatsApp approved format)
+    return phone.length >= 10 && /^\d+$/.test(phone);
+  });
 
   console.log(`📬 ${recipients.length} recipients will receive reminders.`);
 
