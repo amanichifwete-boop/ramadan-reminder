@@ -45,10 +45,7 @@ function getHijriDate(date = new Date()) {
     return "";
   }
 
-  // raw examples:
-  // "20 Jumada II 1447"
-  // "20 jumada ii 1447"
-
+  // Example raw: "20 Jumada II 1447"
   const parts = raw.toLowerCase().split(" ");
   if (parts.length < 3) return raw;
 
@@ -56,7 +53,7 @@ function getHijriDate(date = new Date()) {
   const year = parts[parts.length - 1];
   const monthRaw = parts.slice(1, -1).join(" ");
 
-  // Clean the month string
+  // Normalize
   const clean = monthRaw
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -64,7 +61,7 @@ function getHijriDate(date = new Date()) {
     .replace(/\s+/g, " ")
     .trim();
 
-  // Month mapping (Style A)
+  // Mapping (Style A)
   const map = {
     "muharram": "Muharram",
     "safar": "Safar",
@@ -93,23 +90,21 @@ function getHijriDate(date = new Date()) {
     }
   }
 
-  // Fallback
   if (!month) {
     month = clean.replace(/\b\w/g, c => c.toUpperCase());
   }
 
   // ----------------------------------
-  // APPLY YOUR THREE FIXES ONLY
+  // ONLY YOUR REQUESTED FIXES BELOW
   // ----------------------------------
 
-  // Capitalize roman numeral II if present
-  month = month.replace(/\bii\b/i, "II");
+  // Remove stray "ah" (case insensitive)
+  month = month.replace(/\bah\b/gi, "").trim();
 
-  // Capitalize AH if present
-  month = month.replace(/\bah\b/i, "AH");
+  // Ensure "II" always capitalized
+  month = month.replace(/\bii\b/gi, "II");
 
-  // Final output:
-  // "20 Jumada Thani 1447 AH"
+  // Final output MUST include the year + "AH"
   return `${day} ${month} ${year} AH`;
 }
 
