@@ -1,8 +1,6 @@
 name: Ramadan Reminder Workflow
 
 on:
-  schedule:
-    - cron: '0 0 * * *'   # Runs daily at midnight UTC
   workflow_dispatch:
 
 jobs:
@@ -28,7 +26,7 @@ jobs:
           WABA_PHONE_NUMBER_ID: ${{ secrets.WABA_PHONE_NUMBER_ID }}
           WABA_WHATSAPP_TOKEN: ${{ secrets.WABA_WHATSAPP_TOKEN }}
           WABA_TEMPLATE_NAME: ${{ secrets.WABA_TEMPLATE_NAME }}
-          RAMADAN_START_ISO: ${{ secrets.RAMADAN_START_ISO }}   # ✅ Added & Correct
+          RAMADAN_START_ISO: ${{ secrets.RAMADAN_START_ISO }}
         run: |
-          set -e   # ❗ FAIL workflow if app.js returns any error
+          set -e
           node app.js
