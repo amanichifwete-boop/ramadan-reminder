@@ -1,10 +1,195 @@
-<iframe 
-  src="https://docs.google.com/forms/d/e/1FAIpQLSdgaaHOfXl6FqSpG_hWtzPZJ_stuD3J_w2TvmndpzS4AlM9SQ/viewform?embedded=true"
-  width="100%"
-  height="1500"
-  style="border: none; max-width: 100%;"
-  frameborder="0"
-  marginheight="0"
-  marginwidth="0">
-  Loading…
-</iframe>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hijri Calendar Updates</title>
+
+  <!-- =========================
+       SAFE SECURITY META (IFRAME-COMPATIBLE)
+       ========================= -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), camera=(), microphone=(), payment=()">
+
+  <!-- ❗ Intentionally NO CSP meta
+       (CSP via meta breaks Google Forms embeds)
+       CSP must be enforced at NGINX later
+  -->
+
+  <!-- GOOGLE FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <!-- TAILWIND CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "sans-serif"],
+            amiri: ["Amiri", "serif"],
+          },
+          colors: {
+            primary: "#16a34a",
+            accent: "#7c3aed",
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- 🌙 ISLAMIC ARTWORK STYLE BACKGROUND -->
+  <style>
+    body {
+      background:
+        radial-gradient(circle at top left, #14532d, transparent 60%),
+        radial-gradient(circle at bottom right, #064e3b, transparent 55%),
+        linear-gradient(135deg, #022c22, #064e3b, #022c22);
+      background-attachment: fixed;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="text-gray-800 font-sans">
+
+  <div class="min-h-screen flex items-start justify-center py-10 px-4">
+
+    <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg overflow-hidden">
+
+      <!-- HEADER -->
+      <div class="bg-primary text-white text-center py-8 px-6">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wide">
+          Hijri Calendar Updates
+        </h1>
+        <p class="mt-3 text-sm md:text-base opacity-90 max-w-xl mx-auto">
+          Register to receive Hijri update, Ramadan programs,
+          and beneficial Islamic programs via WhatsApp.
+        </p>
+
+        <!-- AUTO HIJRI DATE -->
+        <p id="hijriDate"
+           class="mt-2 text-sm font-amiri opacity-90"
+           aria-label="Today’s Hijri date"></p>
+      </div>
+
+      <!-- GOOGLE FORM -->
+      <div class="p-4 md:p-6">
+        <iframe
+          title="Hijri Calendar Registration Form"
+          aria-label="Hijri Calendar WhatsApp registration form"
+          src="https://docs.google.com/forms/d/e/1FAIpQLSdgaaHOfXl6FqSpG_hWtzPZJ_stuD3J_w2TvmndpzS4AlM9SQ/viewform?embedded=true"
+          class="w-full min-h-[1500px] border-0"
+          loading="eager"
+        ></iframe>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="bg-gray-100 text-center text-sm text-gray-700 px-6 py-6 space-y-3">
+
+        <p class="font-amiri text-base">
+          ﴿ وَذَكِّرْ فَإِنَّ الذِّكْرَىٰ تَنفَعُ الْمُؤْمِنِينَ ﴾
+        </p>
+
+        <p class="italic text-gray-600">
+          “And remind, for indeed reminders benefit the believers.” — Qur’an 51:55
+        </p>
+
+        <p class="text-xs text-gray-500 pt-2">
+          © <span id="year"></span> Hijri Calendar Updates ·
+          A Sadaqah Jāriyah project for all, in shā’ Allāh
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FLOATING WHATSAPP -->
+  <a
+    id="waBtn"
+    href="https://wa.me/254110427955?text=Assalamu%20alaykum%2C%20I%20need%20help%20with%20Hijri%20Calendar%20registration."
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Chat with us on WhatsApp"
+    title="WhatsApp support"
+    class="fixed bottom-5 right-5 z-50 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-lg px-5 py-3 flex items-center gap-2 text-sm font-medium transition"
+  >
+    💬 WhatsApp
+  </a>
+
+  <!-- RAMADAN COUNTDOWN -->
+  <div
+    id="ramadanBox"
+    aria-label="Ramadan countdown timer"
+    class="fixed bottom-5 left-5 z-50 bg-white/95 backdrop-blur border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-center text-sm"
+  >
+    <p class="font-amiri text-gray-700">🌙 Ramadan Countdown</p>
+    <p id="ramadanCountdown" class="font-semibold text-primary mt-1"></p>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script>
+    /* Footer year */
+    const yearEl = document.getElementById("year");
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+    /* Hijri Date */
+    const hijriEl = document.getElementById("hijriDate");
+    if (hijriEl) {
+      const hijriFormatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+      hijriEl.textContent = hijriFormatter.format(new Date());
+    }
+
+    /* Ramadan Countdown */
+    function getNextRamadan() {
+      const y = new Date().getFullYear();
+      return new Date(`${y}-03-01T00:00:00`);
+    }
+
+    const ramadanEl = document.getElementById("ramadanCountdown");
+
+    function updateRamadan() {
+      if (!ramadanEl) return;
+      let ramadan = getNextRamadan();
+      const now = new Date();
+      if (ramadan < now) ramadan = new Date(`${now.getFullYear() + 1}-03-01T00:00:00`);
+      const days = Math.ceil((ramadan - now) / 86400000);
+      ramadanEl.textContent = days > 0 ? `${days} days remaining` : "Ramadan Mubarak 🌙";
+    }
+
+    updateRamadan();
+    setInterval(updateRamadan, 6 * 60 * 60 * 1000);
+
+    /* Scroll hide */
+    let lastScroll = window.scrollY;
+    window.addEventListener("scroll", () => {
+      const wa = document.getElementById("waBtn");
+      const box = document.getElementById("ramadanBox");
+      if (!wa || !box) return;
+      const current = window.scrollY;
+      const hide = current > lastScroll && current > 150;
+      wa.style.opacity = hide ? "0" : "1";
+      box.style.opacity = hide ? "0" : "1";
+      lastScroll = current;
+    });
+  </script>
+
+</body>
+</html>
